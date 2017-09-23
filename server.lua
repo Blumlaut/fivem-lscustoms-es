@@ -15,6 +15,54 @@ local tbl = {
 	[11] = {locked = false, player = -1},
 }
 
+local modPrices = {
+	["repair"] = 500,
+	["clean"] = 20,
+	["extra"] = 0,
+	["neons"] = 2000,
+	["paint"] = 1000,
+	["Steering Wheel"] = 30,
+	["Air Filter"] = 20,
+	["Dashboard"] = 500,
+	["Ornaments"] = 1000,
+	["Struts"] = 200,
+	["Engine Block"] = 150,
+	["Roof"] = 100,
+	["Side Skirt"] = 50,
+	["Trim"] = 50,
+	["Windows"] = 10,
+	["Vanity Plates"] = 10,
+	["Frame"] = 100,
+	["Grille"] = 10,
+	["Dial"] = 50,
+	["Door Speaker"] = 100,
+	["Rear Bumper"] = 300,
+	["Front Bumper"] = 300,
+	["Spoilers"] = 100,
+	["Trim 2"] = 30,
+	["Seats"] = 200,
+	["Tank"] = 20,
+	["Aerials"] = 10,
+	["Arch Cover"] = 100,
+	["Fender"] = 200,
+	["Right Fender"] = 200,
+	["Exhaust"] = 100,
+	["Hood"] = 200,
+	["Hydraulics"] = 500,
+	["Trunk"] = 200,
+	["Speakers"] = 100,
+	["Plaques"] = 50,
+	["Shifter Leavers"] = 50,
+	["Livery"] = 500,
+	["Performance_1"] = 500,
+	["Performance_2"] = 1000,
+	["Performance_3"] = 1500,
+	["Performance_4"] = 2000,
+	["Turbo"] = 4000,	
+	["Wheels"] = 2000,
+	["Wheel Types"] = 0,
+}
+
 
 
 Citizen.CreateThread(function()
@@ -37,6 +85,11 @@ Citizen.CreateThread(function()
 		SetTimeout(20000, openGarage)
 	end
 	SetTimeout(20000, openGarage)
+	
+	RegisterServerEvent("fx_customs:RequestPriceList")
+	AddEventHandler("fx_customs:RequestPriceList", function()
+		TriggerClientEvent("fx_customs:RequestPriceList",source,modPrices)
+	end)
 	
 	RegisterServerEvent("fx_customs:payPart")
 	AddEventHandler('fx_customs:payPart', function(price)
