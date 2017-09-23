@@ -491,7 +491,6 @@ Citizen.CreateThread(function()
 			WarMenu.Display()
 		elseif WarMenu.IsMenuOpened('tunings') then
 			for i,theItem in pairs(vehicleMods) do
-				Citizen.Trace(theItem.id)
 				if theItem.id == "extra" and #checkValidVehicleExtras() ~= 0 then
 					if WarMenu.MenuButton(theItem.name, theItem.id) then
 					end
@@ -588,7 +587,6 @@ Citizen.CreateThread(function()
 						isPreviewing = false
 						oldmodtype = -1
 						oldmod = -1
-						Citizen.Trace("preview stop")
 						-- TODO, DEDUCT MONEY
 						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
 					elseif isPreviewing and curprim ~= thePaint.id then
@@ -630,7 +628,6 @@ Citizen.CreateThread(function()
 						isPreviewing = false
 						oldmodtype = -1
 						oldmod = -1
-						Citizen.Trace("preview stop")
 						-- TODO, DEDUCT MONEY
 						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
 					elseif isPreviewing and curprim ~= thePaint.id then
@@ -671,7 +668,6 @@ Citizen.CreateThread(function()
 						isPreviewing = false
 						oldmodtype = -1
 						oldmod = -1
-						Citizen.Trace("preview stop")
 						-- TODO, DEDUCT MONEY
 						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
 					elseif isPreviewing and curprim ~= thePaint.id then
@@ -712,7 +708,6 @@ Citizen.CreateThread(function()
 						isPreviewing = false
 						oldmodtype = -1
 						oldmod = -1
-						Citizen.Trace("preview stop")
 						-- TODO, DEDUCT MONEY
 						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
 					elseif isPreviewing and curprim ~= thePaint.id then
@@ -750,7 +745,6 @@ Citizen.CreateThread(function()
 						isPreviewing = false
 						oldmodtype = -1
 						oldmod = -1
-						Citizen.Trace("preview stop")
 						-- TODO, DEDUCT MONEY
 						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
 					elseif isPreviewing and cursec ~= thePaint.id then
@@ -787,7 +781,6 @@ Citizen.CreateThread(function()
 						isPreviewing = false
 						oldmodtype = -1
 						oldmod = -1
-						Citizen.Trace("preview stop")
 						-- TODO, DEDUCT MONEY
 						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
 					elseif isPreviewing and cursec ~= thePaint.id then
@@ -824,7 +817,6 @@ Citizen.CreateThread(function()
 						isPreviewing = false
 						oldmodtype = -1
 						oldmod = -1
-						Citizen.Trace("preview stop")
 						-- TODO, DEDUCT MONEY
 						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
 					elseif isPreviewing and cursec ~= thePaint.id then
@@ -861,7 +853,6 @@ Citizen.CreateThread(function()
 						isPreviewing = false
 						oldmodtype = -1
 						oldmod = -1
-						Citizen.Trace("preview stop")
 						-- TODO, DEDUCT MONEY
 						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
 					elseif isPreviewing and cursec ~= thePaint.id then
@@ -899,7 +890,6 @@ Citizen.CreateThread(function()
 						isPreviewing = false
 						oldmodtype = -1
 						oldmod = -1
-						Citizen.Trace("preview stop")
 						-- TODO, DEDUCT MONEY
 						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
 					elseif isPreviewing and currims ~= thePaint.id then
@@ -937,7 +927,6 @@ Citizen.CreateThread(function()
 						isPreviewing = false
 						oldmodtype = -1
 						oldmod = -1
-						Citizen.Trace("preview stop")
 						-- TODO, DEDUCT MONEY
 						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
 					elseif isPreviewing and currims ~= thePaint.id then
@@ -975,7 +964,6 @@ Citizen.CreateThread(function()
 						isPreviewing = false
 						oldmodtype = -1
 						oldmod = -1
-						Citizen.Trace("preview stop")
 						-- TODO, DEDUCT MONEY
 						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
 					elseif isPreviewing and currims ~= thePaint.id then
@@ -1013,7 +1001,6 @@ Citizen.CreateThread(function()
 						isPreviewing = false
 						oldmodtype = -1
 						oldmod = -1
-						Citizen.Trace("preview stop")
 						-- TODO, DEDUCT MONEY
 						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
 					elseif isPreviewing and currims ~= thePaint.id then
@@ -1058,7 +1045,6 @@ Citizen.CreateThread(function()
 						oldmodtype = -1
 						oldmod = -1						
 					else
-						Citizen.Trace("removing old mod..")
 						if oldmodaction == "rm" then
 							RemoveVehicleMod(veh, oldmodtype)
 							isPreviewing = false
@@ -1155,7 +1141,6 @@ Citizen.CreateThread(function()
 								isPreviewing = false
 								oldmodtype = -1
 								oldmod = -1
-								Citizen.Trace("preview stop")
 								-- TODO, DEDUCT MONEY
 								TriggerServerEvent("fx_customs:payPart", modPrices.neons)
 							elseif isPreviewing and colorr ~= r or colorg ~= g or colorb ~= b then
@@ -1174,7 +1159,7 @@ Citizen.CreateThread(function()
 					if WarMenu.MenuButton("Primary Paint","primary") then
 						
 					elseif WarMenu.MenuButton("Secondary Paint","secondary") then
-					
+						
 					elseif WarMenu.MenuButton("Wheel Paint","rimpaint") then
 						
 					end
@@ -1218,7 +1203,6 @@ Citizen.CreateThread(function()
 								oldmodtype = theItem.id
 								oldmod = GetVehicleMod(veh, theItem.id)
 								isPreviewing = true
-								Citizen.Trace(ctheItem.data.realIndex)
 								if ctheItem.data.realIndex == -1 then
 									oldmodaction = "rm"
 									RemoveVehicleMod(veh, ctheItem.data.modid)
@@ -1235,17 +1219,14 @@ Citizen.CreateThread(function()
 								oldmodtype = -1
 								oldmod = -1
 								oldmodaction = false
-								Citizen.Trace(ctheItem.data.realIndex)
 								if ctheItem.data.realIndex == -1 then
 									RemoveVehicleMod(veh, ctheItem.data.modid)
 								else
 									SetVehicleMod(veh, theItem.id, ctheItem.data.realIndex, false)
 								end
-								Citizen.Trace("preview stop")
 								-- TODO, DEDUCT MONEY
 								TriggerServerEvent("fx_customs:payPart", actualprice)
 							elseif isPreviewing and GetVehicleMod(veh,theItem.id) ~= ctheItem.data.realIndex then
-								Citizen.Trace(ctheItem.data.realIndex)
 								if ctheItem.data.realIndex == -1 then
 									RemoveVehicleMod(veh, ctheItem.data.modid)
 									isPreviewing = false
@@ -1256,14 +1237,7 @@ Citizen.CreateThread(function()
 									SetVehicleMod(veh, theItem.id, ctheItem.data.realIndex, false)
 									isPreviewing = true
 								end
-								Citizen.Trace("preview switch")
 							end
-							
-							--			if ctheItem.data.realIndex == -1 then
-							--				RemoveVehicleMod(veh, ctheItem.data.modid)
-							--			else
-							--				SetVehicleMod(veh, theItem, ctheItem.data.realIndex, false)
-							--			end
 						end
 					end			
 					WarMenu.Display()
