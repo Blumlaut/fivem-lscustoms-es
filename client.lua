@@ -13,6 +13,7 @@ local oldmod = -1
 local oldmodtype = -1
 local previewmod = -1
 local oldmodaction = false
+local hasJustBeenInGarage = false
 local locations = {
 	[1] = { locked = false, outside = { x = -362.796, y = -132.400, z = 38.252, heading = 71.187}, inside = {x = -337.386,y = -136.924,z = 38.573, heading = 269.455}},
 	[2] = { locked = false, outside = { x = -1140.191, y = -1985.478, z = 12.729, heading = 315.290}, inside = {x = -1155.536,y = -2007.183,z = 12.744, heading = 155.413}},
@@ -64,14 +65,11 @@ Citizen.CreateThread(function()
 				
 				if distance < 5 and not near then
 					if DoesEntityExist(veh) then
-						if not pos.locked then
-							drawTxt("Press ~b~ENTER~w~ to enter ~b~Los Santos Customs ",4,1,0.5,0.8,1.0,255,255,255,255) -- DRAWS THE TEXT ON THE SCREEN
-							if IsControlJustPressed(1, 201) and GetLastInputMethod(2) then -- ENTER KEY IS 201 ON CONTROLS	 	 	
+						if not pos.locked and not hasJustBeenInGarage then
 								currentGarage = i
 								insidePosition = pos.inside
 								outsidePosition = pos.outside
 								SetVehicleInGarage()
-							end
 						elseif pos.locked and not currentGarage then
 							drawTxt("~r~Locked, please wait",4,1,0.5,0.8,1.0,255,255,255,255)
 						end
@@ -99,6 +97,7 @@ function SetVehicleInGarage()
 	
 	if DoesEntityExist(veh) then
 		vehicleInGarage = true
+		hasJustBeenInGarage = true
 		TriggerServerEvent("fx_customs:SetVehicle", veh_data )	 
 		SetEntityCoordsNoOffset(veh,pos.x,pos.y,pos.z)
 		SetEntityHeading(veh,pos.heading)
@@ -137,6 +136,9 @@ function SetVehicleOutsideGarage()
 	TriggerServerEvent('fx_customs:LockGarage',false, currentGarage)	
 	currentGarage = nil
 	oldrot = nil
+    SetTimeout(5000, function()
+        hasJustBeenInGarage = false -- wait 5 seconds and unlock the garage for the new guy
+    end)
 end
 
 
