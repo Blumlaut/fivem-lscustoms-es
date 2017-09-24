@@ -91,6 +91,12 @@ Citizen.CreateThread(function()
 		TriggerClientEvent("fx_customs:RequestPriceList",source,modPrices)
 	end)
 	
+	if useES == false then
+		for theRow,theKey in pairs(modPrices) do 
+			modPrices[theRow] = 0
+		end
+	end
+	
 	RegisterServerEvent("fx_customs:payPart")
 	AddEventHandler('fx_customs:payPart', function(price)
 		if useES then
