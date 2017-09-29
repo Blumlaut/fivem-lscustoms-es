@@ -110,7 +110,10 @@ Citizen.CreateThread(function()
 					couldafford = false 
 				end
 			end)
-			TriggerClientEvent("lscustoms:payedForPart", sorse, couldafford)
+		else 
+			couldafford = true
 		end
+		
+		TriggerClientEvent("lscustoms:payedForPart", sorse, couldafford)
 	end)	
 end)
