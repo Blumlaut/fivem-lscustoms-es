@@ -375,6 +375,21 @@ if GetVehiclePedIsUsing(PlayerPedId()) then
 	veh = GetVehiclePedIsUsing(PlayerPedId())
 end
 
+
+RegisterNetEvent("lscustoms:payedForPart")
+
+AddEventHandler("lscustoms:payedForPart", function(afford)
+	couldafford = afford
+end)
+function payPart(price)
+	couldafford = nil 
+	TriggerServerEvent("fx_customs:payPart", price)
+	repeat
+	Wait(10)
+	until couldafford ~= nil
+	return couldafford
+end
+
 Citizen.CreateThread(function()
 	WarMenu.CreateMenu('LSC', 'Los Santos Customs')
 	WarMenu.SetSubTitle('LSC', 'Los Santos Customs')
@@ -431,13 +446,18 @@ Citizen.CreateThread(function()
 			if not IsVehicleDamaged(veh) and WarMenu.MenuButton("Visual Tuning", "tunings") then
 			elseif not IsVehicleDamaged(veh) and WarMenu.MenuButton("Performance Tuning", "performance") then 
 			elseif IsVehicleDamaged(veh) and WarMenu.Button('Repair Vehicle', modPrices.repair.."$") then
-				SetVehicleFixed(veh)
-				TriggerServerEvent("fx_customs:payPart", modPrices.repair)
+				--SetVehicleFixed(veh)
+				payed = payPart(modPrices.repair)
+				Citizen.Trace(tostring(payed))
+				if payed then
+					SetVehicleFixed(veh)
+				end
 				
 			elseif GetVehicleDirtLevel(veh) ~= 0.0 and WarMenu.Button('Clean Vehicle', modPrices.clean.."$") then
-				SetVehicleDirtLevel(veh, 0.0)
-				TriggerServerEvent("fx_customs:payPart", modPrices.clean)
-				
+				payed = payPart(modPrices.clean)
+				if payed then
+					SetVehicleDirtLevel(veh, 0.0)
+				end
 				
 			elseif WarMenu.MenuButton('Exit', 'closeMenu') then
 			end
@@ -492,9 +512,13 @@ Citizen.CreateThread(function()
 			end
 			if WarMenu.Button("Turbo Tune", turboStatus) then
 				if not IsToggleModOn(veh,18) then
-					TriggerServerEvent("fx_customs:payPart", modPrices.Turbo)
+					payed = payPart(modPrices.Turbo)
+					if payed then
+						ToggleVehicleMod(veh, 18, not IsToggleModOn(veh,18))
+					end
+				else
+					ToggleVehicleMod(veh, 18, not IsToggleModOn(veh,18))
 				end
-				ToggleVehicleMod(veh, 18, not IsToggleModOn(veh,18))
 			end
 			WarMenu.Display()
 			
@@ -543,13 +567,14 @@ Citizen.CreateThread(function()
 						
 						isPreviewing = true
 					elseif isPreviewing and curprim == thePaint.id then
-						SetVehicleColours(veh,thePaint.id,oldsec)
-						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-						isPreviewing = false
-						oldmodtype = -1
-						oldmod = -1
-						-- TODO, DEDUCT MONEY
-						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
+						payed = payPart(modPrices.paint)
+						if payed then
+							SetVehicleColours(veh,thePaint.id,oldsec)
+							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+							isPreviewing = false
+							oldmodtype = -1
+							oldmod = -1
+						end
 					elseif isPreviewing and curprim ~= thePaint.id then
 						SetVehicleColours(veh,thePaint.id,oldsec)
 						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
@@ -584,13 +609,14 @@ Citizen.CreateThread(function()
 						
 						isPreviewing = true
 					elseif isPreviewing and curprim == thePaint.id then
-						SetVehicleColours(veh,thePaint.id,oldsec)
-						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-						isPreviewing = false
-						oldmodtype = -1
-						oldmod = -1
-						-- TODO, DEDUCT MONEY
-						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
+						payed = payPart(modPrices.paint)
+						if payed then 
+							SetVehicleColours(veh,thePaint.id,oldsec)
+							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+							isPreviewing = false
+							oldmodtype = -1
+							oldmod = -1
+						end
 					elseif isPreviewing and curprim ~= thePaint.id then
 						SetVehicleColours(veh,thePaint.id,oldsec)
 						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
@@ -624,13 +650,14 @@ Citizen.CreateThread(function()
 						
 						isPreviewing = true
 					elseif isPreviewing and curprim == thePaint.id then
-						SetVehicleColours(veh,thePaint.id,oldsec)
-						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-						isPreviewing = false
-						oldmodtype = -1
-						oldmod = -1
-						-- TODO, DEDUCT MONEY
-						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
+						payed = payPart(modPrices.paint)
+						if payed then 
+							SetVehicleColours(veh,thePaint.id,oldsec)
+							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+							isPreviewing = false
+							oldmodtype = -1
+							oldmod = -1
+						end
 					elseif isPreviewing and curprim ~= thePaint.id then
 						SetVehicleColours(veh,thePaint.id,oldsec)
 						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
@@ -664,13 +691,14 @@ Citizen.CreateThread(function()
 						
 						isPreviewing = true
 					elseif isPreviewing and curprim == thePaint.id then
-						SetVehicleColours(veh,thePaint.id,oldsec)
-						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-						isPreviewing = false
-						oldmodtype = -1
-						oldmod = -1
-						-- TODO, DEDUCT MONEY
-						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
+						payed = payPart(modPrices.paint)
+						if payed then
+							SetVehicleColours(veh,thePaint.id,oldsec)
+							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+							isPreviewing = false
+							oldmodtype = -1
+							oldmod = -1
+						end
 					elseif isPreviewing and curprim ~= thePaint.id then
 						SetVehicleColours(veh,thePaint.id,oldsec)
 						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
@@ -702,12 +730,13 @@ Citizen.CreateThread(function()
 						
 						isPreviewing = true
 					elseif isPreviewing and cursec == thePaint.id then
-						SetVehicleColours(veh,oldprim,thePaint.id)
-						isPreviewing = false
-						oldmodtype = -1
-						oldmod = -1
-						-- TODO, DEDUCT MONEY
-						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
+						payed = payPart(modPrices.paint)
+						if payed then
+							SetVehicleColours(veh,oldprim,thePaint.id)
+							isPreviewing = false
+							oldmodtype = -1
+							oldmod = -1
+						end
 					elseif isPreviewing and cursec ~= thePaint.id then
 						SetVehicleColours(veh,oldprim,thePaint.id)
 						isPreviewing = true
@@ -738,12 +767,13 @@ Citizen.CreateThread(function()
 						
 						isPreviewing = true
 					elseif isPreviewing and cursec == thePaint.id then
-						SetVehicleColours(veh,oldprim,thePaint.id)
-						isPreviewing = false
-						oldmodtype = -1
-						oldmod = -1
-						-- TODO, DEDUCT MONEY
-						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
+						payed = payPart(modPrices.paint)
+						if payed then
+							SetVehicleColours(veh,oldprim,thePaint.id)
+							isPreviewing = false
+							oldmodtype = -1
+							oldmod = -1
+						end
 					elseif isPreviewing and cursec ~= thePaint.id then
 						SetVehicleColours(veh,oldprim,thePaint.id)
 						isPreviewing = true
@@ -774,12 +804,13 @@ Citizen.CreateThread(function()
 						
 						isPreviewing = true
 					elseif isPreviewing and cursec == thePaint.id then
-						SetVehicleColours(veh,oldprim,thePaint.id)
-						isPreviewing = false
-						oldmodtype = -1
-						oldmod = -1
-						-- TODO, DEDUCT MONEY
-						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
+						payed = payPart(modPrices.paint)
+						if payed then
+							SetVehicleColours(veh,oldprim,thePaint.id)
+							isPreviewing = false
+							oldmodtype = -1
+							oldmod = -1
+						end
 					elseif isPreviewing and cursec ~= thePaint.id then
 						SetVehicleColours(veh,oldprim,thePaint.id)
 						isPreviewing = true
@@ -810,12 +841,13 @@ Citizen.CreateThread(function()
 						
 						isPreviewing = true
 					elseif isPreviewing and cursec == thePaint.id then
-						SetVehicleColours(veh,oldprim,thePaint.id)
-						isPreviewing = false
-						oldmodtype = -1
-						oldmod = -1
-						-- TODO, DEDUCT MONEY
-						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
+						payed = payPart(modPrices.paint)
+						if payed then
+							SetVehicleColours(veh,oldprim,thePaint.id)
+							isPreviewing = false
+							oldmodtype = -1
+							oldmod = -1
+						end
 					elseif isPreviewing and cursec ~= thePaint.id then
 						SetVehicleColours(veh,oldprim,thePaint.id)
 						isPreviewing = true
@@ -847,12 +879,13 @@ Citizen.CreateThread(function()
 						
 						isPreviewing = true
 					elseif isPreviewing and currims == thePaint.id then
-						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-						isPreviewing = false
-						oldmodtype = -1
-						oldmod = -1
-						-- TODO, DEDUCT MONEY
-						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
+						payed = payPart(modPrices.paint)
+						if payed then 
+							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+							isPreviewing = false
+							oldmodtype = -1
+							oldmod = -1
+						end
 					elseif isPreviewing and currims ~= thePaint.id then
 						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
 						isPreviewing = true
@@ -884,12 +917,13 @@ Citizen.CreateThread(function()
 						
 						isPreviewing = true
 					elseif isPreviewing and currims == thePaint.id then
-						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-						isPreviewing = false
-						oldmodtype = -1
-						oldmod = -1
-						-- TODO, DEDUCT MONEY
-						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
+						payed = payPart(modPrices.paint)
+						if payed then
+							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+							isPreviewing = false
+							oldmodtype = -1
+							oldmod = -1
+						end
 					elseif isPreviewing and currims ~= thePaint.id then
 						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
 						isPreviewing = true
@@ -921,12 +955,13 @@ Citizen.CreateThread(function()
 						
 						isPreviewing = true
 					elseif isPreviewing and currims == thePaint.id then
-						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-						isPreviewing = false
-						oldmodtype = -1
-						oldmod = -1
-						-- TODO, DEDUCT MONEY
-						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
+						payed = payPart(modPrices.paint)
+						if payed then
+							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+							isPreviewing = false
+							oldmodtype = -1
+							oldmod = -1
+						end
 					elseif isPreviewing and currims ~= thePaint.id then
 						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
 						isPreviewing = true
@@ -958,12 +993,13 @@ Citizen.CreateThread(function()
 						
 						isPreviewing = true
 					elseif isPreviewing and currims == thePaint.id then
-						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-						isPreviewing = false
-						oldmodtype = -1
-						oldmod = -1
-						-- TODO, DEDUCT MONEY
-						TriggerServerEvent("fx_customs:payPart", modPrices.paint)
+						payed = payPart(modPrices.paint)
+						if payed then
+							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+							isPreviewing = false
+							oldmodtype = -1
+							oldmod = -1
+						end
 					elseif isPreviewing and currims ~= thePaint.id then
 						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
 						isPreviewing = true
@@ -1091,16 +1127,17 @@ Citizen.CreateThread(function()
 								SetVehicleNeonLightEnabled(veh,3,true)
 								isPreviewing = true
 							elseif isPreviewing and colorr == r and colorg == g and colorb == b then
-								SetVehicleNeonLightsColour(veh,colorr,colorg,colorb)
-								SetVehicleNeonLightEnabled(veh,0,true)
-								SetVehicleNeonLightEnabled(veh,1,true)
-								SetVehicleNeonLightEnabled(veh,2,true)
-								SetVehicleNeonLightEnabled(veh,3,true)
-								isPreviewing = false
-								oldmodtype = -1
-								oldmod = -1
-								-- TODO, DEDUCT MONEY
-								TriggerServerEvent("fx_customs:payPart", modPrices.neons)
+								payed = payPart(modPrices.neons)
+								if payed then
+									SetVehicleNeonLightsColour(veh,colorr,colorg,colorb)
+									SetVehicleNeonLightEnabled(veh,0,true)
+									SetVehicleNeonLightEnabled(veh,1,true)
+									SetVehicleNeonLightEnabled(veh,2,true)
+									SetVehicleNeonLightEnabled(veh,3,true)
+									isPreviewing = false
+									oldmodtype = -1
+									oldmod = -1
+								end
 							elseif isPreviewing and colorr ~= r or colorg ~= g or colorb ~= b then
 								SetVehicleNeonLightsColour(veh,colorr,colorg,colorb)
 								SetVehicleNeonLightEnabled(veh,0,true)
@@ -1173,17 +1210,18 @@ Citizen.CreateThread(function()
 									SetVehicleMod(veh, theItem.id, ctheItem.data.realIndex, false)
 								end
 							elseif isPreviewing and GetVehicleMod(veh,theItem.id) == ctheItem.data.realIndex then
-								isPreviewing = false
-								oldmodtype = -1
-								oldmod = -1
-								oldmodaction = false
-								if ctheItem.data.realIndex == -1 then
-									RemoveVehicleMod(veh, ctheItem.data.modid)
-								else
-									SetVehicleMod(veh, theItem.id, ctheItem.data.realIndex, false)
+								payed = payPart(actualprice)
+								if payed then
+									isPreviewing = false
+									oldmodtype = -1
+									oldmod = -1
+									oldmodaction = false
+									if ctheItem.data.realIndex == -1 then
+										RemoveVehicleMod(veh, ctheItem.data.modid)
+									else
+										SetVehicleMod(veh, theItem.id, ctheItem.data.realIndex, false)
+									end
 								end
-								-- TODO, DEDUCT MONEY
-								TriggerServerEvent("fx_customs:payPart", actualprice)
 							elseif isPreviewing and GetVehicleMod(veh,theItem.id) ~= ctheItem.data.realIndex then
 								if ctheItem.data.realIndex == -1 then
 									RemoveVehicleMod(veh, ctheItem.data.modid)
@@ -1240,17 +1278,25 @@ Citizen.CreateThread(function()
 				if WarMenu.Button("Stock "..theItem.name, pricestock) then
 					SetVehicleMod(veh,theItem.id, -1)
 				elseif WarMenu.Button(theItem.name.." Upgrade 1", price1) then
-					SetVehicleMod(veh,theItem.id, 0)
-					TriggerServerEvent("fx_customs:payPart", modPrices.Performance_1)
+					payed = payPart(modPrices.Performance_1)
+					if payed then
+						SetVehicleMod(veh,theItem.id, 0)
+					end
 				elseif WarMenu.Button(theItem.name.." Upgrade 2", price2) then
-					SetVehicleMod(veh,theItem.id, 1)
-					TriggerServerEvent("fx_customs:payPart", modPrices.Performance_2)
+					payed = payPart(modPrices.Performance_2)
+					if payed then
+						SetVehicleMod(veh,theItem.id, 1)
+					end
 				elseif WarMenu.Button(theItem.name.." Upgrade 3", price3) then
-					SetVehicleMod(veh,theItem.id, 2)
-					TriggerServerEvent("fx_customs:payPart", modPrices.Performance_3)
+					payed = payPart(modPrices.Performance_3)
+					if payed then
+						SetVehicleMod(veh,theItem.id, 2)
+					end
 				elseif theItem.id ~= 13 and theItem.id ~= 12 and WarMenu.Button(theItem.name.." Upgrade 4", price4) then
-					SetVehicleMod(veh,theItem.id, 3)
-					TriggerServerEvent("fx_customs:payPart", modPrices.Performance_4)
+					payed = payPart(modPrices.Performance_4)
+					if payed then
+						SetVehicleMod(veh,theItem.id, 3)
+					end
 				end
 				WarMenu.Display()
 			end
