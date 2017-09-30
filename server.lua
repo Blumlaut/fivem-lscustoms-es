@@ -99,8 +99,8 @@ Citizen.CreateThread(function()
 	
 	RegisterServerEvent("fx_customs:payPart")
 	AddEventHandler('fx_customs:payPart', function(price)
+		sorse = source
 		if useES then
-			sorse = source
 			couldafford = false 
 			TriggerEvent('es:getPlayerFromId', sorse, function(ourUser) 
 				if ourUser and ourUser.getMoney() >= price then
