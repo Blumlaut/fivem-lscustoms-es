@@ -381,6 +381,9 @@ end
 
 function WarMenu.Display()
 	if isMenuVisible(currentMenu) then
+		DisableControlAction(1, 99)
+		DisableControlAction(1, 81)
+		
 		if menus[currentMenu].aboutToBeClosed then
 			WarMenu.CloseMenu()
 		else
@@ -391,7 +394,7 @@ function WarMenu.Display()
 
 			currentKey = nil
 
-			if IsControlJustReleased(1, keys.down) then
+			if IsControlJustReleased(1, keys.down) or IsControlJustReleased(1, 14) then
 				PlaySoundFrontend(-1, "NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
 
 				if menus[currentMenu].currentOption < optionCount then
@@ -399,7 +402,7 @@ function WarMenu.Display()
 				else
 					menus[currentMenu].currentOption = 1
 				end
-			elseif IsControlJustReleased(1, keys.up) then
+			elseif IsControlJustReleased(1, keys.up) or IsControlJustReleased(1, 15) then
 				PlaySoundFrontend(-1, "NAV_UP_DOWN", "HUD_FRONTEND_DEFAULT_SOUNDSET", true)
 
 				if menus[currentMenu].currentOption > 1 then
