@@ -381,6 +381,9 @@ end
 
 function WarMenu.Display()
 	if isMenuVisible(currentMenu) then
+		DisableControlAction(1, 99)
+		DisableControlAction(1, 81)
+		
 		if menus[currentMenu].aboutToBeClosed then
 			WarMenu.CloseMenu()
 		else
