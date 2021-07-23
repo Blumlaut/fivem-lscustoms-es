@@ -3,7 +3,6 @@
 local FirstJoinProper = false
 local near = false
 local closed = false
-local insideGarage = false
 local currentGarage = nil
 local insidePosition = {}
 local outsidePosition = {}
@@ -56,15 +55,16 @@ end
 Citizen.CreateThread(function()
 	TriggerServerEvent("fx_customs:RequestPriceList") -- request price list
 	while true do
-		Citizen.Wait(0)
+		Citizen.Wait(500)
 		if NetworkIsSessionStarted() then
+			local player = PlayerPedId()
+			local playerLoc = GetEntityCoords(player)
 			for i, pos in pairs(locations) do
-				local player = GetPlayerPed(-1)
-				local playerLoc = GetEntityCoords(player)
-				local veh = GetVehiclePedIsUsing(player)
-				local distance = GetDistanceBetweenCoords(pos.outside.x, pos.outside.y, pos.outside.z, playerLoc )
+				local pvec = vector3(pos.outside.x, pos.outside.y, pos.outside.z)
+				local distance = #(playerLoc - pvec)
 				
 				if distance < pos.range and not near then
+					local veh = GetVehiclePedIsUsing(player)
 					if DoesEntityExist(veh) then
 						if not pos.locked and not hasJustBeenInGarage then
 								TriggerServerEvent("fx_customs:RequestPriceList")
@@ -73,7 +73,7 @@ Citizen.CreateThread(function()
 								outsidePosition = pos.outside
 								SetVehicleInGarage()
 						elseif pos.locked and not currentGarage then
-							drawTxt("~r~Locked, please wait",4,1,0.5,0.8,1.0,255,255,255,255)
+							--drawTxt("~r~Locked, please wait",4,1,0.5,0.8,1.0,255,255,255,255)
 						end
 					end
 				end
@@ -97,7 +97,7 @@ end)
 
 function SetVehicleInGarage()	
 	local pos = insidePosition
-	local player = GetPlayerPed(-1)
+	local player = PlayerPedId()
 	local veh = GetVehiclePedIsIn(player,false)
 	local model = GetEntityModel(veh)
 	oldrot = GetEntityHeading(veh)
@@ -123,7 +123,7 @@ end
 
 function SetVehicleOutsideGarage()	
 	local pos = outsidePosition
-	local ped = GetPlayerPed(-1)
+	local ped = PlayerPedId()
 	local veh = GetVehiclePedIsUsing(ped)
 	vehicleInGarage = false
 	
@@ -440,868 +440,866 @@ Citizen.CreateThread(function()
 	
 	
 	while true do
-		ped = PlayerPedId()
-		veh = GetVehiclePedIsUsing(ped)
-		if WarMenu.IsMenuOpened('LSC') then
-			if not IsVehicleDamaged(veh) and WarMenu.MenuButton("Visual Tuning", "tunings") then
-			elseif not IsVehicleDamaged(veh) and WarMenu.MenuButton("Performance Tuning", "performance") then 
-			elseif IsVehicleDamaged(veh) and WarMenu.Button('Repair Vehicle', modPrices.repair.."$") then
-				--SetVehicleFixed(veh)
-				payed = payPart(modPrices.repair)
-				Citizen.Trace(tostring(payed))
-				if payed then
-					SetVehicleFixed(veh)
+		if currentGarage then
+			ped = PlayerPedId()
+			if WarMenu.IsMenuOpened('LSC') then
+				veh = GetVehiclePedIsUsing(ped)
+				if not IsVehicleDamaged(veh) and WarMenu.MenuButton("Visual Tuning", "tunings") then
+				elseif not IsVehicleDamaged(veh) and WarMenu.MenuButton("Performance Tuning", "performance") then 
+				elseif IsVehicleDamaged(veh) and WarMenu.Button('Repair Vehicle', modPrices.repair.."$") then
+					--SetVehicleFixed(veh)
+					payed = payPart(modPrices.repair)
+					Citizen.Trace(tostring(payed))
+					if payed then
+						SetVehicleFixed(veh)
+					end
+					
+				elseif GetVehicleDirtLevel(veh) ~= 0.0 and WarMenu.Button('Clean Vehicle', modPrices.clean.."$") then
+					payed = payPart(modPrices.clean)
+					if payed then
+						SetVehicleDirtLevel(veh, 0.0)
+					end
+					
+				elseif WarMenu.MenuButton('Exit', 'closeMenu') then
 				end
 				
-			elseif GetVehicleDirtLevel(veh) ~= 0.0 and WarMenu.Button('Clean Vehicle', modPrices.clean.."$") then
-				payed = payPart(modPrices.clean)
-				if payed then
-					SetVehicleDirtLevel(veh, 0.0)
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('closeMenu') then
+				if WarMenu.Button('Yes') then
+					WarMenu.CloseMenu()
+					SetVehicleOutsideGarage()
+				elseif WarMenu.MenuButton('No', 'LSC') then
 				end
-				
-			elseif WarMenu.MenuButton('Exit', 'closeMenu') then
-			end
-			
-			WarMenu.Display()
-		elseif WarMenu.IsMenuOpened('closeMenu') then
-			if WarMenu.Button('Yes') then
-				WarMenu.CloseMenu()
-				SetVehicleOutsideGarage()
-			elseif WarMenu.MenuButton('No', 'LSC') then
-			end
-			WarMenu.Display()
-		elseif WarMenu.IsMenuOpened('tunings') then
-			for i,theItem in pairs(vehicleMods) do
-				if theItem.id == "extra" and #checkValidVehicleExtras() ~= 0 then
-					if WarMenu.MenuButton(theItem.name, theItem.id) then
-					end
-				elseif theItem.id == "neon" then
-					if WarMenu.MenuButton(theItem.name, theItem.id) then
-					end
-				elseif theItem.id == "paint" then
-					if WarMenu.MenuButton(theItem.name, theItem.id) then
-					end
-				elseif theItem.id == "wheeltypes" then
-					if WarMenu.MenuButton(theItem.name, theItem.id) then
-					end
-				else
-					local valid = checkValidVehicleMods(theItem.id)
-					for ci,ctheItem in pairs(valid) do
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened('tunings') then
+				for i,theItem in pairs(vehicleMods) do
+					if theItem.id == "extra" and #checkValidVehicleExtras() ~= 0 then
 						if WarMenu.MenuButton(theItem.name, theItem.id) then
 						end
-						break
+					elseif theItem.id == "neon" then
+						if WarMenu.MenuButton(theItem.name, theItem.id) then
+						end
+					elseif theItem.id == "paint" then
+						if WarMenu.MenuButton(theItem.name, theItem.id) then
+						end
+					elseif theItem.id == "wheeltypes" then
+						if WarMenu.MenuButton(theItem.name, theItem.id) then
+						end
+					else
+						local valid = checkValidVehicleMods(theItem.id)
+						for ci,ctheItem in pairs(valid) do
+							if WarMenu.MenuButton(theItem.name, theItem.id) then
+							end
+							break
+						end
 					end
+					
 				end
+				WarMenu.Display()
 				
-			end
-			WarMenu.Display()
-		elseif IsControlJustReleased(0, 244) and veh and GetPedInVehicleSeat(veh, -1) == ped then --M by default
-			--SetVehicleModKit(veh,0)
-			--WarMenu.OpenMenu('LSC')
-			
-			
-		elseif WarMenu.IsMenuOpened('performance') then
-			for i,theItem in pairs(perfMods) do
-				if WarMenu.MenuButton(theItem.name, theItem.id) then
+				
+			elseif WarMenu.IsMenuOpened('performance') then
+				for i,theItem in pairs(perfMods) do
+					if WarMenu.MenuButton(theItem.name, theItem.id) then
+					end
+				end	
+				if IsToggleModOn(veh,18) then
+					turboStatus = "Installed"
+				else
+					turboStatus = modPrices.Turbo.."$"
 				end
-			end	
-			if IsToggleModOn(veh,18) then
-				turboStatus = "Installed"
-			else
-				turboStatus = modPrices.Turbo.."$"
-			end
-			if WarMenu.Button("Turbo Tune", turboStatus) then
-				if not IsToggleModOn(veh,18) then
-					payed = payPart(modPrices.Turbo)
-					if payed then
+				if WarMenu.Button("Turbo Tune", turboStatus) then
+					if not IsToggleModOn(veh,18) then
+						payed = payPart(modPrices.Turbo)
+						if payed then
+							ToggleVehicleMod(veh, 18, not IsToggleModOn(veh,18))
+						end
+					else
 						ToggleVehicleMod(veh, 18, not IsToggleModOn(veh,18))
 					end
-				else
-					ToggleVehicleMod(veh, 18, not IsToggleModOn(veh,18))
 				end
-			end
-			WarMenu.Display()
-			
-			
-		elseif WarMenu.IsMenuOpened("primary") then
-			WarMenu.MenuButton("Classic", "classic1")
-			WarMenu.MenuButton("Metallic", "metallic1")
-			WarMenu.MenuButton("Matte", "matte1")
-			WarMenu.MenuButton("Metal", "metal1")
-			WarMenu.Display()
-		elseif WarMenu.IsMenuOpened("secondary") then
-			WarMenu.MenuButton("Classic", "classic2")
-			WarMenu.MenuButton("Metallic", "metallic2")
-			WarMenu.MenuButton("Matte", "matte2")
-			WarMenu.MenuButton("Metal", "metal2")
-			WarMenu.Display()
-		elseif WarMenu.IsMenuOpened("rimpaint") then
-			WarMenu.MenuButton("Classic", "classic3")
-			WarMenu.MenuButton("Metallic", "metallic3")
-			WarMenu.MenuButton("Matte", "matte3")
-			WarMenu.MenuButton("Metal", "metal3")
-			WarMenu.Display()
-			
-		elseif WarMenu.IsMenuOpened("classic1") then
-			for theName,thePaint in pairs(paintsClassic) do
-				tp,ts = GetVehicleColours(veh)
-				if tp == thePaint.id and not isPreviewing then
-					pricetext = "Installed"
-				else
-					if isPreviewing and tp == thePaint.id then
-						pricetext = "Previewing"
-					else
-						pricetext = modPrices.paint.."$"
-					end
-				end
-				curprim,cursec = GetVehicleColours(veh)
-				if WarMenu.Button(thePaint.name, pricetext) then
-					if not isPreviewing then
-						oldmodtype = "paint"
-						oldmodaction = false
-						oldprim,oldsec = GetVehicleColours(veh)
-						oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
-						oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
-						SetVehicleColours(veh,thePaint.id,oldsec)
-						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-						
-						isPreviewing = true
-					elseif isPreviewing and curprim == thePaint.id then
-						payed = payPart(modPrices.paint)
-						if payed then
-							SetVehicleColours(veh,thePaint.id,oldsec)
-							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-							isPreviewing = false
-							oldmodtype = -1
-							oldmod = -1
-						end
-					elseif isPreviewing and curprim ~= thePaint.id then
-						SetVehicleColours(veh,thePaint.id,oldsec)
-						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-						isPreviewing = true
-					end
-				end
-			end
-			
-			WarMenu.Display()
-		elseif WarMenu.IsMenuOpened("metallic1") then
-			for theName,thePaint in pairs(paintsClassic) do
-				tp,ts = GetVehicleColours(veh)
-				if tp == thePaint.id and not isPreviewing then
-					pricetext = "Installed"
-				else
-					if isPreviewing and tp == thePaint.id then
-						pricetext = "Previewing"
-					else
-						pricetext = modPrices.paint.."$"
-					end
-				end
-				curprim,cursec = GetVehicleColours(veh)
-				if WarMenu.Button(thePaint.name, pricetext) then
-					if not isPreviewing then
-						oldmodtype = "paint"
-						oldmodaction = false
-						oldprim,oldsec = GetVehicleColours(veh)
-						oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
-						oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
-						SetVehicleColours(veh,thePaint.id,oldsec)
-						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-						
-						isPreviewing = true
-					elseif isPreviewing and curprim == thePaint.id then
-						payed = payPart(modPrices.paint)
-						if payed then 
-							SetVehicleColours(veh,thePaint.id,oldsec)
-							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-							isPreviewing = false
-							oldmodtype = -1
-							oldmod = -1
-						end
-					elseif isPreviewing and curprim ~= thePaint.id then
-						SetVehicleColours(veh,thePaint.id,oldsec)
-						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-						isPreviewing = true
-					end
-				end
-			end
-			WarMenu.Display()
-		elseif WarMenu.IsMenuOpened("matte1") then
-			for theName,thePaint in pairs(paintsMatte) do
-				tp,ts = GetVehicleColours(veh)
-				if tp == thePaint.id and not isPreviewing then
-					pricetext = "Installed"
-				else
-					if isPreviewing and tp == thePaint.id then
-						pricetext = "Previewing"
-					else
-						pricetext = modPrices.paint.."$"
-					end
-				end
-				curprim,cursec = GetVehicleColours(veh)
-				if WarMenu.Button(thePaint.name, pricetext) then
-					if not isPreviewing then
-						oldmodtype = "paint"
-						oldmodaction = false
-						oldprim,oldsec = GetVehicleColours(veh)
-						oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
-						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-						oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
-						SetVehicleColours(veh,thePaint.id,oldsec)
-						
-						isPreviewing = true
-					elseif isPreviewing and curprim == thePaint.id then
-						payed = payPart(modPrices.paint)
-						if payed then 
-							SetVehicleColours(veh,thePaint.id,oldsec)
-							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-							isPreviewing = false
-							oldmodtype = -1
-							oldmod = -1
-						end
-					elseif isPreviewing and curprim ~= thePaint.id then
-						SetVehicleColours(veh,thePaint.id,oldsec)
-						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-						isPreviewing = true
-					end
-				end
-			end
-			WarMenu.Display()
-		elseif WarMenu.IsMenuOpened("metal1") then
-			for theName,thePaint in pairs(paintsMetal) do
-				tp,ts = GetVehicleColours(veh)
-				if tp == thePaint.id and not isPreviewing then
-					pricetext = "Installed"
-				else
-					if isPreviewing and tp == thePaint.id then
-						pricetext = "Previewing"
-					else
-						pricetext = modPrices.paint.."$"
-					end
-				end
-				curprim,cursec = GetVehicleColours(veh)
-				if WarMenu.Button(thePaint.name, pricetext) then
-					if not isPreviewing then
-						oldmodtype = "paint"
-						oldmodaction = false
-						oldprim,oldsec = GetVehicleColours(veh)
-						oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
-						oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
-						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-						SetVehicleColours(veh,thePaint.id,oldsec)
-						
-						isPreviewing = true
-					elseif isPreviewing and curprim == thePaint.id then
-						payed = payPart(modPrices.paint)
-						if payed then
-							SetVehicleColours(veh,thePaint.id,oldsec)
-							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-							isPreviewing = false
-							oldmodtype = -1
-							oldmod = -1
-						end
-					elseif isPreviewing and curprim ~= thePaint.id then
-						SetVehicleColours(veh,thePaint.id,oldsec)
-						SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
-						isPreviewing = true
-					end
-				end
-			end
-			WarMenu.Display()
-		elseif WarMenu.IsMenuOpened("classic2") then
-			for theName,thePaint in pairs(paintsClassic) do
-				tp,ts = GetVehicleColours(veh)
-				if ts == thePaint.id and not isPreviewing then
-					pricetext = "Installed"
-				else
-					if isPreviewing and ts == thePaint.id then
-						pricetext = "Previewing"
-					else
-						pricetext = modPrices.paint.."$"
-					end
-				end
-				curprim,cursec = GetVehicleColours(veh)
-				if WarMenu.Button(thePaint.name, pricetext) then
-					if not isPreviewing then
-						oldmodtype = "paint"
-						oldmodaction = false
-						oldprim,oldsec = GetVehicleColours(veh)
-						oldmod = table.pack(oldprim,oldsec)
-						SetVehicleColours(veh,oldprim,thePaint.id)
-						
-						isPreviewing = true
-					elseif isPreviewing and cursec == thePaint.id then
-						payed = payPart(modPrices.paint)
-						if payed then
-							SetVehicleColours(veh,oldprim,thePaint.id)
-							isPreviewing = false
-							oldmodtype = -1
-							oldmod = -1
-						end
-					elseif isPreviewing and cursec ~= thePaint.id then
-						SetVehicleColours(veh,oldprim,thePaint.id)
-						isPreviewing = true
-					end
-				end
-			end
-			WarMenu.Display()
-		elseif WarMenu.IsMenuOpened("metallic2") then 
-			for theName,thePaint in pairs(paintsClassic) do
-				tp,ts = GetVehicleColours(veh)
-				if ts == thePaint.id and not isPreviewing then
-					pricetext = "Installed"
-				else
-					if isPreviewing and ts == thePaint.id then
-						pricetext = "Previewing"
-					else
-						pricetext = modPrices.paint.."$"
-					end
-				end
-				curprim,cursec = GetVehicleColours(veh)
-				if WarMenu.Button(thePaint.name, pricetext) then
-					if not isPreviewing then
-						oldmodtype = "paint"
-						oldmodaction = false
-						oldprim,oldsec = GetVehicleColours(veh)
-						oldmod = table.pack(oldprim,oldsec)
-						SetVehicleColours(veh,oldprim,thePaint.id)
-						
-						isPreviewing = true
-					elseif isPreviewing and cursec == thePaint.id then
-						payed = payPart(modPrices.paint)
-						if payed then
-							SetVehicleColours(veh,oldprim,thePaint.id)
-							isPreviewing = false
-							oldmodtype = -1
-							oldmod = -1
-						end
-					elseif isPreviewing and cursec ~= thePaint.id then
-						SetVehicleColours(veh,oldprim,thePaint.id)
-						isPreviewing = true
-					end
-				end
-			end
-			WarMenu.Display()
-		elseif WarMenu.IsMenuOpened("matte2") then 
-			for theName,thePaint in pairs(paintsMatte) do
-				tp,ts = GetVehicleColours(veh)
-				if ts == thePaint.id and not isPreviewing then
-					pricetext = "Installed"
-				else
-					if isPreviewing and ts == thePaint.id then
-						pricetext = "Previewing"
-					else
-						pricetext = modPrices.paint.."$"
-					end
-				end
-				curprim,cursec = GetVehicleColours(veh)
-				if WarMenu.Button(thePaint.name, pricetext) then
-					if not isPreviewing then
-						oldmodtype = "paint"
-						oldmodaction = false
-						oldprim,oldsec = GetVehicleColours(veh)
-						oldmod = table.pack(oldprim,oldsec)
-						SetVehicleColours(veh,oldprim,thePaint.id)
-						
-						isPreviewing = true
-					elseif isPreviewing and cursec == thePaint.id then
-						payed = payPart(modPrices.paint)
-						if payed then
-							SetVehicleColours(veh,oldprim,thePaint.id)
-							isPreviewing = false
-							oldmodtype = -1
-							oldmod = -1
-						end
-					elseif isPreviewing and cursec ~= thePaint.id then
-						SetVehicleColours(veh,oldprim,thePaint.id)
-						isPreviewing = true
-					end
-				end
-			end
-			WarMenu.Display()
-		elseif WarMenu.IsMenuOpened("metal2") then
-			for theName,thePaint in pairs(paintsMetal) do
-				tp,ts = GetVehicleColours(veh)
-				if ts == thePaint.id and not isPreviewing then
-					pricetext = "Installed"
-				else
-					if isPreviewing and ts == thePaint.id then
-						pricetext = "Previewing"
-					else
-						pricetext = modPrices.paint.."$"
-					end
-				end
-				curprim,cursec = GetVehicleColours(veh)
-				if WarMenu.Button(thePaint.name, pricetext) then
-					if not isPreviewing then
-						oldmodtype = "paint"
-						oldmodaction = false
-						oldprim,oldsec = GetVehicleColours(veh)
-						oldmod = table.pack(oldprim,oldsec)
-						SetVehicleColours(veh,oldprim,thePaint.id)
-						
-						isPreviewing = true
-					elseif isPreviewing and cursec == thePaint.id then
-						payed = payPart(modPrices.paint)
-						if payed then
-							SetVehicleColours(veh,oldprim,thePaint.id)
-							isPreviewing = false
-							oldmodtype = -1
-							oldmod = -1
-						end
-					elseif isPreviewing and cursec ~= thePaint.id then
-						SetVehicleColours(veh,oldprim,thePaint.id)
-						isPreviewing = true
-					end
-				end
-			end
-			
-		elseif WarMenu.IsMenuOpened("classic3") then
-			for theName,thePaint in pairs(paintsClassic) do
-				_,ts = GetVehicleExtraColours(veh)
-				if ts == thePaint.id and not isPreviewing then
-					pricetext = "Installed"
-				else
-					if isPreviewing and ts == thePaint.id then
-						pricetext = "Previewing"
-					else
-						pricetext = modPrices.paint.."$"
-					end
-				end
-				_,currims = GetVehicleExtraColours(veh)
-				if WarMenu.Button(thePaint.name, pricetext) then
-					if not isPreviewing then
-						oldmodtype = "paint"
-						oldmodaction = false
-						oldprim,oldsec = GetVehicleColours(veh)
-						oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
-						oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
-						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-						
-						isPreviewing = true
-					elseif isPreviewing and currims == thePaint.id then
-						payed = payPart(modPrices.paint)
-						if payed then 
-							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-							isPreviewing = false
-							oldmodtype = -1
-							oldmod = -1
-						end
-					elseif isPreviewing and currims ~= thePaint.id then
-						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-						isPreviewing = true
-					end
-				end
-			end
-			WarMenu.Display()
-		elseif WarMenu.IsMenuOpened("metallic3") then 
-			for theName,thePaint in pairs(paintsClassic) do
-				_,ts = GetVehicleExtraColours(veh)
-				if ts == thePaint.id and not isPreviewing then
-					pricetext = "Installed"
-				else
-					if isPreviewing and ts == thePaint.id then
-						pricetext = "Previewing"
-					else
-						pricetext = modPrices.paint.."$"
-					end
-				end
-				_,currims = GetVehicleExtraColours(veh)
-				if WarMenu.Button(thePaint.name, pricetext) then
-					if not isPreviewing then
-						oldmodtype = "paint"
-						oldmodaction = false
-						oldprim,oldsec = GetVehicleColours(veh)
-						oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
-						oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
-						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-						
-						isPreviewing = true
-					elseif isPreviewing and currims == thePaint.id then
-						payed = payPart(modPrices.paint)
-						if payed then
-							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-							isPreviewing = false
-							oldmodtype = -1
-							oldmod = -1
-						end
-					elseif isPreviewing and currims ~= thePaint.id then
-						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-						isPreviewing = true
-					end
-				end
-			end
-			WarMenu.Display()
-		elseif WarMenu.IsMenuOpened("matte3") then 
-			for theName,thePaint in pairs(paintsMatte) do
-				_,ts = GetVehicleExtraColours(veh)
-				if ts == thePaint.id and not isPreviewing then
-					pricetext = "Installed"
-				else
-					if isPreviewing and ts == thePaint.id then
-						pricetext = "Previewing"
-					else
-						pricetext = modPrices.paint.."$"
-					end
-				end
-				_,currims = GetVehicleExtraColours(veh)
-				if WarMenu.Button(thePaint.name, pricetext) then
-					if not isPreviewing then
-						oldmodtype = "paint"
-						oldmodaction = false
-						oldprim,oldsec = GetVehicleColours(veh)
-						oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
-						oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
-						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-						
-						isPreviewing = true
-					elseif isPreviewing and currims == thePaint.id then
-						payed = payPart(modPrices.paint)
-						if payed then
-							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-							isPreviewing = false
-							oldmodtype = -1
-							oldmod = -1
-						end
-					elseif isPreviewing and currims ~= thePaint.id then
-						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-						isPreviewing = true
-					end
-				end
-			end
-			WarMenu.Display()
-		elseif WarMenu.IsMenuOpened("metal3") then
-			for theName,thePaint in pairs(paintsMetal) do
-				_,ts = GetVehicleExtraColours(veh)
-				if ts == thePaint.id and not isPreviewing then
-					pricetext = "Installed"
-				else
-					if isPreviewing and ts == thePaint.id then
-						pricetext = "Previewing"
-					else
-						pricetext = modPrices.paint.."$"
-					end
-				end
-				_,currims = GetVehicleExtraColours(veh)
-				if WarMenu.Button(thePaint.name, pricetext) then
-					if not isPreviewing then
-						oldmodtype = "paint"
-						oldmodaction = false
-						oldprim,oldsec = GetVehicleColours(veh)
-						oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
-						oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
-						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-						
-						isPreviewing = true
-					elseif isPreviewing and currims == thePaint.id then
-						payed = payPart(modPrices.paint)
-						if payed then
-							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-							isPreviewing = false
-							oldmodtype = -1
-							oldmod = -1
-						end
-					elseif isPreviewing and currims ~= thePaint.id then
-						SetVehicleExtraColours(veh, oldpearl,thePaint.id)
-						isPreviewing = true
-					end
-				end
-			end
-			WarMenu.Display()
-		end
-		
-		
-		for i,theItem in pairs(vehicleMods) do
-			
-			if WarMenu.IsMenuOpened(41) or WarMenu.IsMenuOpened(39) or WarMenu.IsMenuOpened(40) or WarMenu.IsMenuOpened(45) then
-				SetVehicleDoorOpen(veh, 4, false, true)
-			elseif WarMenu.IsMenuOpened(38) or WarMenu.IsMenuOpened(37) then
-				SetVehicleDoorOpen(veh, 5, false, true)
+				WarMenu.Display()
 				
-			elseif WarMenu.IsMenuOpened("tunings") then
-				SetVehicleDoorShut(veh, 4, false)
-				SetVehicleDoorShut(veh, 5, false)
-				if isPreviewing then
-					if oldmodtype == "neon" then
-						local r,g,b = table.unpack(oldmod)
-						SetVehicleNeonLightsColour(veh,r,g,b)
-						SetVehicleNeonLightEnabled(veh, 0, oldmodaction)
-						SetVehicleNeonLightEnabled(veh, 1, oldmodaction)
-						SetVehicleNeonLightEnabled(veh, 2, oldmodaction)
-						SetVehicleNeonLightEnabled(veh, 3, oldmodaction)
-						isPreviewing = false
-						oldmodtype = -1
-						oldmod = -1
-					elseif oldmodtype == "paint" then
-						local pa,pb,pc,pd = table.unpack(oldmod)
-						SetVehicleColours(veh, pa,pb)
-						SetVehicleExtraColours(veh,pc,pd)
-						isPreviewing = false
-						oldmodtype = -1
-						oldmod = -1						
+				
+			elseif WarMenu.IsMenuOpened("primary") then
+				WarMenu.MenuButton("Classic", "classic1")
+				WarMenu.MenuButton("Metallic", "metallic1")
+				WarMenu.MenuButton("Matte", "matte1")
+				WarMenu.MenuButton("Metal", "metal1")
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened("secondary") then
+				WarMenu.MenuButton("Classic", "classic2")
+				WarMenu.MenuButton("Metallic", "metallic2")
+				WarMenu.MenuButton("Matte", "matte2")
+				WarMenu.MenuButton("Metal", "metal2")
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened("rimpaint") then
+				WarMenu.MenuButton("Classic", "classic3")
+				WarMenu.MenuButton("Metallic", "metallic3")
+				WarMenu.MenuButton("Matte", "matte3")
+				WarMenu.MenuButton("Metal", "metal3")
+				WarMenu.Display()
+				
+			elseif WarMenu.IsMenuOpened("classic1") then
+				for theName,thePaint in pairs(paintsClassic) do
+					tp,ts = GetVehicleColours(veh)
+					if tp == thePaint.id and not isPreviewing then
+						pricetext = "Installed"
 					else
-						if oldmodaction == "rm" then
-							RemoveVehicleMod(veh, oldmodtype)
-							isPreviewing = false
-							oldmodtype = -1
-							oldmod = -1
+						if isPreviewing and tp == thePaint.id then
+							pricetext = "Previewing"
 						else
-							SetVehicleMod(veh, oldmodtype,oldmod,false)
-							isPreviewing = false
-							oldmodtype = -1
-							oldmod = -1
+							pricetext = modPrices.paint.."$"
+						end
+					end
+					curprim,cursec = GetVehicleColours(veh)
+					if WarMenu.Button(thePaint.name, pricetext) then
+						if not isPreviewing then
+							oldmodtype = "paint"
+							oldmodaction = false
+							oldprim,oldsec = GetVehicleColours(veh)
+							oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
+							oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
+							SetVehicleColours(veh,thePaint.id,oldsec)
+							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+							
+							isPreviewing = true
+						elseif isPreviewing and curprim == thePaint.id then
+							payed = payPart(modPrices.paint)
+							if payed then
+								SetVehicleColours(veh,thePaint.id,oldsec)
+								SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+								isPreviewing = false
+								oldmodtype = -1
+								oldmod = -1
+							end
+						elseif isPreviewing and curprim ~= thePaint.id then
+							SetVehicleColours(veh,thePaint.id,oldsec)
+							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+							isPreviewing = true
 						end
 					end
 				end
+				
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened("metallic1") then
+				for theName,thePaint in pairs(paintsClassic) do
+					tp,ts = GetVehicleColours(veh)
+					if tp == thePaint.id and not isPreviewing then
+						pricetext = "Installed"
+					else
+						if isPreviewing and tp == thePaint.id then
+							pricetext = "Previewing"
+						else
+							pricetext = modPrices.paint.."$"
+						end
+					end
+					curprim,cursec = GetVehicleColours(veh)
+					if WarMenu.Button(thePaint.name, pricetext) then
+						if not isPreviewing then
+							oldmodtype = "paint"
+							oldmodaction = false
+							oldprim,oldsec = GetVehicleColours(veh)
+							oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
+							oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
+							SetVehicleColours(veh,thePaint.id,oldsec)
+							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+							
+							isPreviewing = true
+						elseif isPreviewing and curprim == thePaint.id then
+							payed = payPart(modPrices.paint)
+							if payed then 
+								SetVehicleColours(veh,thePaint.id,oldsec)
+								SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+								isPreviewing = false
+								oldmodtype = -1
+								oldmod = -1
+							end
+						elseif isPreviewing and curprim ~= thePaint.id then
+							SetVehicleColours(veh,thePaint.id,oldsec)
+							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+							isPreviewing = true
+						end
+					end
+				end
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened("matte1") then
+				for theName,thePaint in pairs(paintsMatte) do
+					tp,ts = GetVehicleColours(veh)
+					if tp == thePaint.id and not isPreviewing then
+						pricetext = "Installed"
+					else
+						if isPreviewing and tp == thePaint.id then
+							pricetext = "Previewing"
+						else
+							pricetext = modPrices.paint.."$"
+						end
+					end
+					curprim,cursec = GetVehicleColours(veh)
+					if WarMenu.Button(thePaint.name, pricetext) then
+						if not isPreviewing then
+							oldmodtype = "paint"
+							oldmodaction = false
+							oldprim,oldsec = GetVehicleColours(veh)
+							oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
+							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+							oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
+							SetVehicleColours(veh,thePaint.id,oldsec)
+							
+							isPreviewing = true
+						elseif isPreviewing and curprim == thePaint.id then
+							payed = payPart(modPrices.paint)
+							if payed then 
+								SetVehicleColours(veh,thePaint.id,oldsec)
+								SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+								isPreviewing = false
+								oldmodtype = -1
+								oldmod = -1
+							end
+						elseif isPreviewing and curprim ~= thePaint.id then
+							SetVehicleColours(veh,thePaint.id,oldsec)
+							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+							isPreviewing = true
+						end
+					end
+				end
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened("metal1") then
+				for theName,thePaint in pairs(paintsMetal) do
+					tp,ts = GetVehicleColours(veh)
+					if tp == thePaint.id and not isPreviewing then
+						pricetext = "Installed"
+					else
+						if isPreviewing and tp == thePaint.id then
+							pricetext = "Previewing"
+						else
+							pricetext = modPrices.paint.."$"
+						end
+					end
+					curprim,cursec = GetVehicleColours(veh)
+					if WarMenu.Button(thePaint.name, pricetext) then
+						if not isPreviewing then
+							oldmodtype = "paint"
+							oldmodaction = false
+							oldprim,oldsec = GetVehicleColours(veh)
+							oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
+							oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
+							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+							SetVehicleColours(veh,thePaint.id,oldsec)
+							
+							isPreviewing = true
+						elseif isPreviewing and curprim == thePaint.id then
+							payed = payPart(modPrices.paint)
+							if payed then
+								SetVehicleColours(veh,thePaint.id,oldsec)
+								SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+								isPreviewing = false
+								oldmodtype = -1
+								oldmod = -1
+							end
+						elseif isPreviewing and curprim ~= thePaint.id then
+							SetVehicleColours(veh,thePaint.id,oldsec)
+							SetVehicleExtraColours(veh, thePaint.id,oldwheelcolour)
+							isPreviewing = true
+						end
+					end
+				end
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened("classic2") then
+				for theName,thePaint in pairs(paintsClassic) do
+					tp,ts = GetVehicleColours(veh)
+					if ts == thePaint.id and not isPreviewing then
+						pricetext = "Installed"
+					else
+						if isPreviewing and ts == thePaint.id then
+							pricetext = "Previewing"
+						else
+							pricetext = modPrices.paint.."$"
+						end
+					end
+					curprim,cursec = GetVehicleColours(veh)
+					if WarMenu.Button(thePaint.name, pricetext) then
+						if not isPreviewing then
+							oldmodtype = "paint"
+							oldmodaction = false
+							oldprim,oldsec = GetVehicleColours(veh)
+							oldmod = table.pack(oldprim,oldsec)
+							SetVehicleColours(veh,oldprim,thePaint.id)
+							
+							isPreviewing = true
+						elseif isPreviewing and cursec == thePaint.id then
+							payed = payPart(modPrices.paint)
+							if payed then
+								SetVehicleColours(veh,oldprim,thePaint.id)
+								isPreviewing = false
+								oldmodtype = -1
+								oldmod = -1
+							end
+						elseif isPreviewing and cursec ~= thePaint.id then
+							SetVehicleColours(veh,oldprim,thePaint.id)
+							isPreviewing = true
+						end
+					end
+				end
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened("metallic2") then 
+				for theName,thePaint in pairs(paintsClassic) do
+					tp,ts = GetVehicleColours(veh)
+					if ts == thePaint.id and not isPreviewing then
+						pricetext = "Installed"
+					else
+						if isPreviewing and ts == thePaint.id then
+							pricetext = "Previewing"
+						else
+							pricetext = modPrices.paint.."$"
+						end
+					end
+					curprim,cursec = GetVehicleColours(veh)
+					if WarMenu.Button(thePaint.name, pricetext) then
+						if not isPreviewing then
+							oldmodtype = "paint"
+							oldmodaction = false
+							oldprim,oldsec = GetVehicleColours(veh)
+							oldmod = table.pack(oldprim,oldsec)
+							SetVehicleColours(veh,oldprim,thePaint.id)
+							
+							isPreviewing = true
+						elseif isPreviewing and cursec == thePaint.id then
+							payed = payPart(modPrices.paint)
+							if payed then
+								SetVehicleColours(veh,oldprim,thePaint.id)
+								isPreviewing = false
+								oldmodtype = -1
+								oldmod = -1
+							end
+						elseif isPreviewing and cursec ~= thePaint.id then
+							SetVehicleColours(veh,oldprim,thePaint.id)
+							isPreviewing = true
+						end
+					end
+				end
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened("matte2") then 
+				for theName,thePaint in pairs(paintsMatte) do
+					tp,ts = GetVehicleColours(veh)
+					if ts == thePaint.id and not isPreviewing then
+						pricetext = "Installed"
+					else
+						if isPreviewing and ts == thePaint.id then
+							pricetext = "Previewing"
+						else
+							pricetext = modPrices.paint.."$"
+						end
+					end
+					curprim,cursec = GetVehicleColours(veh)
+					if WarMenu.Button(thePaint.name, pricetext) then
+						if not isPreviewing then
+							oldmodtype = "paint"
+							oldmodaction = false
+							oldprim,oldsec = GetVehicleColours(veh)
+							oldmod = table.pack(oldprim,oldsec)
+							SetVehicleColours(veh,oldprim,thePaint.id)
+							
+							isPreviewing = true
+						elseif isPreviewing and cursec == thePaint.id then
+							payed = payPart(modPrices.paint)
+							if payed then
+								SetVehicleColours(veh,oldprim,thePaint.id)
+								isPreviewing = false
+								oldmodtype = -1
+								oldmod = -1
+							end
+						elseif isPreviewing and cursec ~= thePaint.id then
+							SetVehicleColours(veh,oldprim,thePaint.id)
+							isPreviewing = true
+						end
+					end
+				end
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened("metal2") then
+				for theName,thePaint in pairs(paintsMetal) do
+					tp,ts = GetVehicleColours(veh)
+					if ts == thePaint.id and not isPreviewing then
+						pricetext = "Installed"
+					else
+						if isPreviewing and ts == thePaint.id then
+							pricetext = "Previewing"
+						else
+							pricetext = modPrices.paint.."$"
+						end
+					end
+					curprim,cursec = GetVehicleColours(veh)
+					if WarMenu.Button(thePaint.name, pricetext) then
+						if not isPreviewing then
+							oldmodtype = "paint"
+							oldmodaction = false
+							oldprim,oldsec = GetVehicleColours(veh)
+							oldmod = table.pack(oldprim,oldsec)
+							SetVehicleColours(veh,oldprim,thePaint.id)
+							
+							isPreviewing = true
+						elseif isPreviewing and cursec == thePaint.id then
+							payed = payPart(modPrices.paint)
+							if payed then
+								SetVehicleColours(veh,oldprim,thePaint.id)
+								isPreviewing = false
+								oldmodtype = -1
+								oldmod = -1
+							end
+						elseif isPreviewing and cursec ~= thePaint.id then
+							SetVehicleColours(veh,oldprim,thePaint.id)
+							isPreviewing = true
+						end
+					end
+				end
+				
+			elseif WarMenu.IsMenuOpened("classic3") then
+				for theName,thePaint in pairs(paintsClassic) do
+					_,ts = GetVehicleExtraColours(veh)
+					if ts == thePaint.id and not isPreviewing then
+						pricetext = "Installed"
+					else
+						if isPreviewing and ts == thePaint.id then
+							pricetext = "Previewing"
+						else
+							pricetext = modPrices.paint.."$"
+						end
+					end
+					_,currims = GetVehicleExtraColours(veh)
+					if WarMenu.Button(thePaint.name, pricetext) then
+						if not isPreviewing then
+							oldmodtype = "paint"
+							oldmodaction = false
+							oldprim,oldsec = GetVehicleColours(veh)
+							oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
+							oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
+							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+							
+							isPreviewing = true
+						elseif isPreviewing and currims == thePaint.id then
+							payed = payPart(modPrices.paint)
+							if payed then 
+								SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+								isPreviewing = false
+								oldmodtype = -1
+								oldmod = -1
+							end
+						elseif isPreviewing and currims ~= thePaint.id then
+							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+							isPreviewing = true
+						end
+					end
+				end
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened("metallic3") then 
+				for theName,thePaint in pairs(paintsClassic) do
+					_,ts = GetVehicleExtraColours(veh)
+					if ts == thePaint.id and not isPreviewing then
+						pricetext = "Installed"
+					else
+						if isPreviewing and ts == thePaint.id then
+							pricetext = "Previewing"
+						else
+							pricetext = modPrices.paint.."$"
+						end
+					end
+					_,currims = GetVehicleExtraColours(veh)
+					if WarMenu.Button(thePaint.name, pricetext) then
+						if not isPreviewing then
+							oldmodtype = "paint"
+							oldmodaction = false
+							oldprim,oldsec = GetVehicleColours(veh)
+							oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
+							oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
+							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+							
+							isPreviewing = true
+						elseif isPreviewing and currims == thePaint.id then
+							payed = payPart(modPrices.paint)
+							if payed then
+								SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+								isPreviewing = false
+								oldmodtype = -1
+								oldmod = -1
+							end
+						elseif isPreviewing and currims ~= thePaint.id then
+							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+							isPreviewing = true
+						end
+					end
+				end
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened("matte3") then 
+				for theName,thePaint in pairs(paintsMatte) do
+					_,ts = GetVehicleExtraColours(veh)
+					if ts == thePaint.id and not isPreviewing then
+						pricetext = "Installed"
+					else
+						if isPreviewing and ts == thePaint.id then
+							pricetext = "Previewing"
+						else
+							pricetext = modPrices.paint.."$"
+						end
+					end
+					_,currims = GetVehicleExtraColours(veh)
+					if WarMenu.Button(thePaint.name, pricetext) then
+						if not isPreviewing then
+							oldmodtype = "paint"
+							oldmodaction = false
+							oldprim,oldsec = GetVehicleColours(veh)
+							oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
+							oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
+							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+							
+							isPreviewing = true
+						elseif isPreviewing and currims == thePaint.id then
+							payed = payPart(modPrices.paint)
+							if payed then
+								SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+								isPreviewing = false
+								oldmodtype = -1
+								oldmod = -1
+							end
+						elseif isPreviewing and currims ~= thePaint.id then
+							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+							isPreviewing = true
+						end
+					end
+				end
+				WarMenu.Display()
+			elseif WarMenu.IsMenuOpened("metal3") then
+				for theName,thePaint in pairs(paintsMetal) do
+					_,ts = GetVehicleExtraColours(veh)
+					if ts == thePaint.id and not isPreviewing then
+						pricetext = "Installed"
+					else
+						if isPreviewing and ts == thePaint.id then
+							pricetext = "Previewing"
+						else
+							pricetext = modPrices.paint.."$"
+						end
+					end
+					_,currims = GetVehicleExtraColours(veh)
+					if WarMenu.Button(thePaint.name, pricetext) then
+						if not isPreviewing then
+							oldmodtype = "paint"
+							oldmodaction = false
+							oldprim,oldsec = GetVehicleColours(veh)
+							oldpearl,oldwheelcolour = GetVehicleExtraColours(veh)
+							oldmod = table.pack(oldprim,oldsec,oldpearl,oldwheelcolour)
+							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+							
+							isPreviewing = true
+						elseif isPreviewing and currims == thePaint.id then
+							payed = payPart(modPrices.paint)
+							if payed then
+								SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+								isPreviewing = false
+								oldmodtype = -1
+								oldmod = -1
+							end
+						elseif isPreviewing and currims ~= thePaint.id then
+							SetVehicleExtraColours(veh, oldpearl,thePaint.id)
+							isPreviewing = true
+						end
+					end
+				end
+				WarMenu.Display()
 			end
 			
 			
-			
-			
-			if WarMenu.IsMenuOpened(theItem.id) then
-				if theItem.id == "wheeltypes" then
-					if WarMenu.Button("Sport Wheels") then
-						SetVehicleWheelType(veh,0)
-					elseif WarMenu.Button("Muscle Wheels") then
-						SetVehicleWheelType(veh,1)
-					elseif WarMenu.Button("Lowrider Wheels") then
-						SetVehicleWheelType(veh,2)
-					elseif WarMenu.Button("SUV Wheels") then
-						SetVehicleWheelType(veh,3)
-					elseif WarMenu.Button("Offroad Wheels") then
-						SetVehicleWheelType(veh,4)
-					elseif WarMenu.Button("Tuner Wheels") then
-						SetVehicleWheelType(veh,5)
-					elseif WarMenu.Button("High End Wheels") then 
-						SetVehicleWheelType(veh,7)
-					end
-					WarMenu.Display()
-				elseif theItem.id == "extra" then
-					local extras = checkValidVehicleExtras()
-					for i,theItem in pairs(extras) do
-						if IsVehicleExtraTurnedOn(veh,i) then
-							pricestring = "Installed"
+			for i,theItem in pairs(vehicleMods) do
+				
+				if WarMenu.IsMenuOpened(41) or WarMenu.IsMenuOpened(39) or WarMenu.IsMenuOpened(40) or WarMenu.IsMenuOpened(45) then
+					SetVehicleDoorOpen(veh, 4, false, true)
+				elseif WarMenu.IsMenuOpened(38) or WarMenu.IsMenuOpened(37) then
+					SetVehicleDoorOpen(veh, 5, false, true)
+					
+				elseif WarMenu.IsMenuOpened("tunings") then
+					SetVehicleDoorShut(veh, 4, false)
+					SetVehicleDoorShut(veh, 5, false)
+					if isPreviewing then
+						if oldmodtype == "neon" then
+							local r,g,b = table.unpack(oldmod)
+							SetVehicleNeonLightsColour(veh,r,g,b)
+							SetVehicleNeonLightEnabled(veh, 0, oldmodaction)
+							SetVehicleNeonLightEnabled(veh, 1, oldmodaction)
+							SetVehicleNeonLightEnabled(veh, 2, oldmodaction)
+							SetVehicleNeonLightEnabled(veh, 3, oldmodaction)
+							isPreviewing = false
+							oldmodtype = -1
+							oldmod = -1
+						elseif oldmodtype == "paint" then
+							local pa,pb,pc,pd = table.unpack(oldmod)
+							SetVehicleColours(veh, pa,pb)
+							SetVehicleExtraColours(veh,pc,pd)
+							isPreviewing = false
+							oldmodtype = -1
+							oldmod = -1						
 						else
-							pricestring = modPrices.extra.."$"
-						end
-						
-						if WarMenu.Button(theItem.menuName, pricestring) then
-							SetVehicleExtra(veh, i, IsVehicleExtraTurnedOn(veh,i))
-						end
-					end
-					WarMenu.Display()
-				elseif theItem.id == "neon" then
-					
-					if WarMenu.Button("None", "0$") then
-						SetVehicleNeonLightsColour(veh,255,255,255)
-						SetVehicleNeonLightEnabled(veh,0,false)
-						SetVehicleNeonLightEnabled(veh,1,false)
-						SetVehicleNeonLightEnabled(veh,2,false)
-						SetVehicleNeonLightEnabled(veh,3,false)
-					end
-					
-					
-					for i,theItem in pairs(neonColors) do
-						colorr,colorg,colorb = table.unpack(theItem)
-						r,g,b = GetVehicleNeonLightsColour(veh)
-						
-						if colorr == r and colorg == g and colorb == b and IsVehicleNeonLightEnabled(vehicle,2) and not isPreviewing then
-							pricestring = "Installed"
-						else
-							if isPreviewing and colorr == r and colorg == g and colorb == b then
-								pricestring = "Previewing"
+							if oldmodaction == "rm" then
+								RemoveVehicleMod(veh, oldmodtype)
+								isPreviewing = false
+								oldmodtype = -1
+								oldmod = -1
 							else
-								pricestring = modPrices.neons.."$"
+								SetVehicleMod(veh, oldmodtype,oldmod,false)
+								isPreviewing = false
+								oldmodtype = -1
+								oldmod = -1
 							end
 						end
+					end
+				end
+				
+				
+				
+				
+				if WarMenu.IsMenuOpened(theItem.id) then
+					if theItem.id == "wheeltypes" then
+						if WarMenu.Button("Sport Wheels") then
+							SetVehicleWheelType(veh,0)
+						elseif WarMenu.Button("Muscle Wheels") then
+							SetVehicleWheelType(veh,1)
+						elseif WarMenu.Button("Lowrider Wheels") then
+							SetVehicleWheelType(veh,2)
+						elseif WarMenu.Button("SUV Wheels") then
+							SetVehicleWheelType(veh,3)
+						elseif WarMenu.Button("Offroad Wheels") then
+							SetVehicleWheelType(veh,4)
+						elseif WarMenu.Button("Tuner Wheels") then
+							SetVehicleWheelType(veh,5)
+						elseif WarMenu.Button("High End Wheels") then 
+							SetVehicleWheelType(veh,7)
+						end
+						WarMenu.Display()
+					elseif theItem.id == "extra" then
+						local extras = checkValidVehicleExtras()
+						for i,theItem in pairs(extras) do
+							if IsVehicleExtraTurnedOn(veh,i) then
+								pricestring = "Installed"
+							else
+								pricestring = modPrices.extra.."$"
+							end
+							
+							if WarMenu.Button(theItem.menuName, pricestring) then
+								SetVehicleExtra(veh, i, IsVehicleExtraTurnedOn(veh,i))
+							end
+						end
+						WarMenu.Display()
+					elseif theItem.id == "neon" then
 						
-						if WarMenu.Button(i, pricestring) then
-							if not isPreviewing then
-								oldmodtype = "neon"
-								oldmodaction = IsVehicleNeonLightEnabled(veh,1)
-								oldr,oldg,oldb = GetVehicleNeonLightsColour(veh)
-								oldmod = table.pack(oldr,oldg,oldb)
-								SetVehicleNeonLightsColour(veh,colorr,colorg,colorb)
-								SetVehicleNeonLightEnabled(veh,0,true)
-								SetVehicleNeonLightEnabled(veh,1,true)
-								SetVehicleNeonLightEnabled(veh,2,true)
-								SetVehicleNeonLightEnabled(veh,3,true)
-								isPreviewing = true
-							elseif isPreviewing and colorr == r and colorg == g and colorb == b then
-								payed = payPart(modPrices.neons)
-								if payed then
+						if WarMenu.Button("None", "0$") then
+							SetVehicleNeonLightsColour(veh,255,255,255)
+							SetVehicleNeonLightEnabled(veh,0,false)
+							SetVehicleNeonLightEnabled(veh,1,false)
+							SetVehicleNeonLightEnabled(veh,2,false)
+							SetVehicleNeonLightEnabled(veh,3,false)
+						end
+						
+						
+						for i,theItem in pairs(neonColors) do
+							colorr,colorg,colorb = table.unpack(theItem)
+							r,g,b = GetVehicleNeonLightsColour(veh)
+							
+							if colorr == r and colorg == g and colorb == b and IsVehicleNeonLightEnabled(vehicle,2) and not isPreviewing then
+								pricestring = "Installed"
+							else
+								if isPreviewing and colorr == r and colorg == g and colorb == b then
+									pricestring = "Previewing"
+								else
+									pricestring = modPrices.neons.."$"
+								end
+							end
+							
+							if WarMenu.Button(i, pricestring) then
+								if not isPreviewing then
+									oldmodtype = "neon"
+									oldmodaction = IsVehicleNeonLightEnabled(veh,1)
+									oldr,oldg,oldb = GetVehicleNeonLightsColour(veh)
+									oldmod = table.pack(oldr,oldg,oldb)
 									SetVehicleNeonLightsColour(veh,colorr,colorg,colorb)
 									SetVehicleNeonLightEnabled(veh,0,true)
 									SetVehicleNeonLightEnabled(veh,1,true)
 									SetVehicleNeonLightEnabled(veh,2,true)
 									SetVehicleNeonLightEnabled(veh,3,true)
-									isPreviewing = false
-									oldmodtype = -1
-									oldmod = -1
-								end
-							elseif isPreviewing and colorr ~= r or colorg ~= g or colorb ~= b then
-								SetVehicleNeonLightsColour(veh,colorr,colorg,colorb)
-								SetVehicleNeonLightEnabled(veh,0,true)
-								SetVehicleNeonLightEnabled(veh,1,true)
-								SetVehicleNeonLightEnabled(veh,2,true)
-								SetVehicleNeonLightEnabled(veh,3,true)
-								isPreviewing = true
-							end
-						end
-					end
-					WarMenu.Display()
-				elseif theItem.id == "paint" then
-					
-					if WarMenu.MenuButton("Primary Paint","primary") then
-						
-					elseif WarMenu.MenuButton("Secondary Paint","secondary") then
-						
-					elseif WarMenu.MenuButton("Wheel Paint","rimpaint") then
-						
-					end
-					
-					
-					WarMenu.Display()
-					
-				else
-					local valid = checkValidVehicleMods(theItem.id)
-					for ci,ctheItem in pairs(valid) do
-						for eh,tehEtem in pairs(modPrices) do
-							if eh == theItem.name and GetVehicleMod(veh,theItem.id) ~= ctheItem.data.realIndex then
-								price = tehEtem.."$"
-								actualprice = tehEtem
-							elseif eh == theItem.name and isPreviewing and GetVehicleMod(veh,theItem.id) == ctheItem.data.realIndex then
-								price = "Previewing"
-								actualprice = tehEtem
-							elseif eh == theItem.name and GetVehicleMod(veh,theItem.id) == ctheItem.data.realIndex then
-								price = "Installed"
-								actualprice = tehEtem
-							end
-						end
-						if ctheItem.menuName == "Stock" then price = 0 end
-						if theItem.name == "Horns" then
-							for chorn,HornId in pairs(horns) do
-								if HornId == ci-1 then
-									ctheItem.menuName = chorn
-								end
-							end
-						end
-						if ctheItem.menuName == "NULL" then
-							ctheItem.menuName = "unknown"
-						end
-						if WarMenu.Button(ctheItem.menuName, price) then
-							
-							
-							
-							
-							
-							if not isPreviewing then
-								oldmodtype = theItem.id
-								oldmod = GetVehicleMod(veh, theItem.id)
-								isPreviewing = true
-								if ctheItem.data.realIndex == -1 then
-									oldmodaction = "rm"
-									RemoveVehicleMod(veh, ctheItem.data.modid)
-									isPreviewing = false
-									oldmodtype = -1
-									oldmod = -1
-									oldmodaction = false
-								else
-									oldmodaction = false
-									SetVehicleMod(veh, theItem.id, ctheItem.data.realIndex, false)
-								end
-							elseif isPreviewing and GetVehicleMod(veh,theItem.id) == ctheItem.data.realIndex then
-								payed = payPart(actualprice)
-								if payed then
-									isPreviewing = false
-									oldmodtype = -1
-									oldmod = -1
-									oldmodaction = false
-									if ctheItem.data.realIndex == -1 then
-										RemoveVehicleMod(veh, ctheItem.data.modid)
-									else
-										SetVehicleMod(veh, theItem.id, ctheItem.data.realIndex, false)
+									isPreviewing = true
+								elseif isPreviewing and colorr == r and colorg == g and colorb == b then
+									payed = payPart(modPrices.neons)
+									if payed then
+										SetVehicleNeonLightsColour(veh,colorr,colorg,colorb)
+										SetVehicleNeonLightEnabled(veh,0,true)
+										SetVehicleNeonLightEnabled(veh,1,true)
+										SetVehicleNeonLightEnabled(veh,2,true)
+										SetVehicleNeonLightEnabled(veh,3,true)
+										isPreviewing = false
+										oldmodtype = -1
+										oldmod = -1
 									end
-								end
-							elseif isPreviewing and GetVehicleMod(veh,theItem.id) ~= ctheItem.data.realIndex then
-								if ctheItem.data.realIndex == -1 then
-									RemoveVehicleMod(veh, ctheItem.data.modid)
-									isPreviewing = false
-									oldmodtype = -1
-									oldmod = -1
-									oldmodaction = false
-								else
-									SetVehicleMod(veh, theItem.id, ctheItem.data.realIndex, false)
+								elseif isPreviewing and colorr ~= r or colorg ~= g or colorb ~= b then
+									SetVehicleNeonLightsColour(veh,colorr,colorg,colorb)
+									SetVehicleNeonLightEnabled(veh,0,true)
+									SetVehicleNeonLightEnabled(veh,1,true)
+									SetVehicleNeonLightEnabled(veh,2,true)
+									SetVehicleNeonLightEnabled(veh,3,true)
 									isPreviewing = true
 								end
 							end
 						end
-					end			
+						WarMenu.Display()
+					elseif theItem.id == "paint" then
+						
+						if WarMenu.MenuButton("Primary Paint","primary") then
+							
+						elseif WarMenu.MenuButton("Secondary Paint","secondary") then
+							
+						elseif WarMenu.MenuButton("Wheel Paint","rimpaint") then
+							
+						end
+						
+						
+						WarMenu.Display()
+						
+					else
+						local valid = checkValidVehicleMods(theItem.id)
+						for ci,ctheItem in pairs(valid) do
+							for eh,tehEtem in pairs(modPrices) do
+								if eh == theItem.name and GetVehicleMod(veh,theItem.id) ~= ctheItem.data.realIndex then
+									price = tehEtem.."$"
+									actualprice = tehEtem
+								elseif eh == theItem.name and isPreviewing and GetVehicleMod(veh,theItem.id) == ctheItem.data.realIndex then
+									price = "Previewing"
+									actualprice = tehEtem
+								elseif eh == theItem.name and GetVehicleMod(veh,theItem.id) == ctheItem.data.realIndex then
+									price = "Installed"
+									actualprice = tehEtem
+								end
+							end
+							if ctheItem.menuName == "Stock" then price = 0 end
+							if theItem.name == "Horns" then
+								for chorn,HornId in pairs(horns) do
+									if HornId == ci-1 then
+										ctheItem.menuName = chorn
+									end
+								end
+							end
+							if ctheItem.menuName == "NULL" then
+								ctheItem.menuName = "unknown"
+							end
+							if WarMenu.Button(ctheItem.menuName, price) then
+								
+								
+								
+								
+								
+								if not isPreviewing then
+									oldmodtype = theItem.id
+									oldmod = GetVehicleMod(veh, theItem.id)
+									isPreviewing = true
+									if ctheItem.data.realIndex == -1 then
+										oldmodaction = "rm"
+										RemoveVehicleMod(veh, ctheItem.data.modid)
+										isPreviewing = false
+										oldmodtype = -1
+										oldmod = -1
+										oldmodaction = false
+									else
+										oldmodaction = false
+										SetVehicleMod(veh, theItem.id, ctheItem.data.realIndex, false)
+									end
+								elseif isPreviewing and GetVehicleMod(veh,theItem.id) == ctheItem.data.realIndex then
+									payed = payPart(actualprice)
+									if payed then
+										isPreviewing = false
+										oldmodtype = -1
+										oldmod = -1
+										oldmodaction = false
+										if ctheItem.data.realIndex == -1 then
+											RemoveVehicleMod(veh, ctheItem.data.modid)
+										else
+											SetVehicleMod(veh, theItem.id, ctheItem.data.realIndex, false)
+										end
+									end
+								elseif isPreviewing and GetVehicleMod(veh,theItem.id) ~= ctheItem.data.realIndex then
+									if ctheItem.data.realIndex == -1 then
+										RemoveVehicleMod(veh, ctheItem.data.modid)
+										isPreviewing = false
+										oldmodtype = -1
+										oldmod = -1
+										oldmodaction = false
+									else
+										SetVehicleMod(veh, theItem.id, ctheItem.data.realIndex, false)
+										isPreviewing = true
+									end
+								end
+							end
+						end			
+						WarMenu.Display()
+					end
+				end
+			end
+			
+			for i,theItem in pairs(perfMods) do
+				if WarMenu.IsMenuOpened(theItem.id) then
+					
+					if GetVehicleMod(veh,theItem.id) == 0 then
+						pricestock = "0$"
+						price1 = "Installed"
+						price2 = modPrices.Performance_2.."$"
+						price3 = modPrices.Performance_3.."$"
+						price4 = modPrices.Performance_4.."$"
+					elseif GetVehicleMod(veh,theItem.id) == 1 then
+						pricestock = "0$"
+						price1 = modPrices.Performance_1.."$"
+						price2 = "Installed"
+						price3 = modPrices.Performance_3.."$"
+						price4 = modPrices.Performance_4.."$"
+					elseif GetVehicleMod(veh,theItem.id) == 2 then
+						pricestock = "0$"
+						price1 = modPrices.Performance_1.."$"
+						price2 = modPrices.Performance_2.."$"
+						price3 = "Installed"
+						price4 = modPrices.Performance_4.."$"
+					elseif GetVehicleMod(veh,theItem.id) == 3 then
+						pricestock = "0$"
+						price1 = modPrices.Performance_1.."$"
+						price2 = modPrices.Performance_2.."$"
+						price3 = modPrices.Performance_3.."$"
+						price4 = "Installed"
+					elseif GetVehicleMod(veh,theItem.id) == -1 then
+						pricestock = "Installed"
+						price1 = modPrices.Performance_1.."$"
+						price2 = modPrices.Performance_2.."$"
+						price3 = modPrices.Performance_3.."$"
+						price4 = modPrices.Performance_4.."$"
+					end
+					if WarMenu.Button("Stock "..theItem.name, pricestock) then
+						SetVehicleMod(veh,theItem.id, -1)
+					elseif WarMenu.Button(theItem.name.." Upgrade 1", price1) then
+						payed = payPart(modPrices.Performance_1)
+						if payed then
+							SetVehicleMod(veh,theItem.id, 0)
+						end
+					elseif WarMenu.Button(theItem.name.." Upgrade 2", price2) then
+						payed = payPart(modPrices.Performance_2)
+						if payed then
+							SetVehicleMod(veh,theItem.id, 1)
+						end
+					elseif WarMenu.Button(theItem.name.." Upgrade 3", price3) then
+						payed = payPart(modPrices.Performance_3)
+						if payed then
+							SetVehicleMod(veh,theItem.id, 2)
+						end
+					elseif theItem.id ~= 13 and theItem.id ~= 12 and WarMenu.Button(theItem.name.." Upgrade 4", price4) then
+						payed = payPart(modPrices.Performance_4)
+						if payed then
+							SetVehicleMod(veh,theItem.id, 3)
+						end
+					end
 					WarMenu.Display()
 				end
 			end
 		end
-		
-		for i,theItem in pairs(perfMods) do
-			if WarMenu.IsMenuOpened(theItem.id) then
-				
-				if GetVehicleMod(veh,theItem.id) == 0 then
-					pricestock = "0$"
-					price1 = "Installed"
-					price2 = modPrices.Performance_2.."$"
-					price3 = modPrices.Performance_3.."$"
-					price4 = modPrices.Performance_4.."$"
-				elseif GetVehicleMod(veh,theItem.id) == 1 then
-					pricestock = "0$"
-					price1 = modPrices.Performance_1.."$"
-					price2 = "Installed"
-					price3 = modPrices.Performance_3.."$"
-					price4 = modPrices.Performance_4.."$"
-				elseif GetVehicleMod(veh,theItem.id) == 2 then
-					pricestock = "0$"
-					price1 = modPrices.Performance_1.."$"
-					price2 = modPrices.Performance_2.."$"
-					price3 = "Installed"
-					price4 = modPrices.Performance_4.."$"
-				elseif GetVehicleMod(veh,theItem.id) == 3 then
-					pricestock = "0$"
-					price1 = modPrices.Performance_1.."$"
-					price2 = modPrices.Performance_2.."$"
-					price3 = modPrices.Performance_3.."$"
-					price4 = "Installed"
-				elseif GetVehicleMod(veh,theItem.id) == -1 then
-					pricestock = "Installed"
-					price1 = modPrices.Performance_1.."$"
-					price2 = modPrices.Performance_2.."$"
-					price3 = modPrices.Performance_3.."$"
-					price4 = modPrices.Performance_4.."$"
-				end
-				if WarMenu.Button("Stock "..theItem.name, pricestock) then
-					SetVehicleMod(veh,theItem.id, -1)
-				elseif WarMenu.Button(theItem.name.." Upgrade 1", price1) then
-					payed = payPart(modPrices.Performance_1)
-					if payed then
-						SetVehicleMod(veh,theItem.id, 0)
-					end
-				elseif WarMenu.Button(theItem.name.." Upgrade 2", price2) then
-					payed = payPart(modPrices.Performance_2)
-					if payed then
-						SetVehicleMod(veh,theItem.id, 1)
-					end
-				elseif WarMenu.Button(theItem.name.." Upgrade 3", price3) then
-					payed = payPart(modPrices.Performance_3)
-					if payed then
-						SetVehicleMod(veh,theItem.id, 2)
-					end
-				elseif theItem.id ~= 13 and theItem.id ~= 12 and WarMenu.Button(theItem.name.." Upgrade 4", price4) then
-					payed = payPart(modPrices.Performance_4)
-					if payed then
-						SetVehicleMod(veh,theItem.id, 3)
-					end
-				end
-				WarMenu.Display()
-			end
-		end
-		
 		Citizen.Wait(0)
 	end
 end)
